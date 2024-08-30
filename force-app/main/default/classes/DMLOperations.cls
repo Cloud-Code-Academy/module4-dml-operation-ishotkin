@@ -147,11 +147,11 @@ public with sharing class DMLOperations {
 
         if (accountsByName.isEmpty() == false) {
             oppAccount = accountsByName.get(0); // If at least 1 Account was found, assign it to the Account variable
+        } 
+        else {
+            oppAccount.Name = accountName; // Assign the Account Name
+            insert oppAccount; // Make sure that the Account is in the database
         }
-
-        oppAccount.Name = accountName; // Assign the (new) Account Name
-        
-        upsert oppAccount; // Make sure that the Account is in the database
 
         for (String s : oppNames) { // Loop through each Opportunity name
             Opportunity newOpp = new Opportunity (Name = s, AccountId = oppAccount.Id, StageName = 'Prospecting', CloseDate = Date.today()); // Create an Opportunity instance with the given name
@@ -163,10 +163,9 @@ public with sharing class DMLOperations {
             }
 
             oppsToProcess.add(newOpp); // Add the value to the list of opportunities to process
-
         }
 
-        upsert oppsToProcess; // Upser the Opportunities
+        upsert oppsToProcess; // Upsert the Opportunities
         
     }
     
