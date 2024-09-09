@@ -205,10 +205,38 @@ public with sharing class DMLOperations {
 	 * @param contactsToUpsert List of Contacts to be upserted and linked to accounts.
 	 */
 	public static void upsertAccountsWithContacts(List<Contact> contactsToUpsert) {
-		Account contactAccount; // Create null instance of Account
-        for( Contact c : contactsToUpsert) { // Loop through each Contact
-            contactAccount = upsertAccount(c.LastName); // Extract the Account Name from Contact's LastName and call previous question to upsert Account
-            c.accountId = contactAccount.Id; // Link the Contact to its Account using the Account Id
+		List<Account> accountList = [SELECT Id, Name FROM Account]; // Query for the Account
+        List<Account> insertingAccounts = new List<Account>(); // Create empty list to hold Accounts to insert
+        Boolean foundAccount; // Create variable to track if Account was found for the Contact
+
+        for(Contact c : contactsToUpsert) { // Loop through each Contact
+            foundAccount = false;
+
+            for(Account a : accountList) { // Loop through each Account
+                if(a.Name == c.LastName) {
+                    c.accountId = a.Id; // If the Contact has an Account, link the Contact to its Account using the Account Id
+                    foundAccount = true; // Update the boolean to track that the Account was found
+
+                    break; // If the Contact's Account exists, break the loop and work on the next Contact
+                }
+            }
+            if(!foundAccount) { // If the Contact's Account was not found, create a new one
+                Account accountToUpsert = new Account(Name = c.LastName); // Set the name of the new Account
+                insertingAccounts.add(accountToUpsert);
+
+            }
+        }
+
+        insert insertingAccounts; // Insert the missing Accounts
+        accountList.addAll(insertingAccounts); // Add the new Actions to the list of Accounts queried earlier
+
+        for(Contact c : contactsToUpsert) { // Loop through each Contact again
+            for(Account a : accountList) { // Loop through each Account in updated list. All Accounts should be there now
+                if(a.Name == c.LastName) {
+                    c.accountId = a.Id; // Link the Contact to its Account using the Account Id
+                    break; // If the Contact's Account is found, break the loop and work on the next Contact
+                }
+            }
         }
 
 		upsert contactsToUpsert; // Upsert the Contacts
